@@ -833,8 +833,9 @@ get_form_input_of_type(application, 'x-www-form-urlencoded', _, Dic) :-
 get_form_input_of_type(multipart, 'form-data', Params, Dic) :-
         member((boundary=B), Params),
         name(B, BS),
-        Boundary = [0'-,0'-|BS],
-        get_lines_to_boundary(Boundary, _, End),
+        Boundary1 = [0'-,0'-|BS],
+        get_lines_to_boundary(Boundary1, _, End),
+        remove_last_eolf(Boundary1, Boundary),
         get_multipart_form_data(End, Boundary, Dic), !.
 get_form_input_of_type(Type,Subtype,_,_) :-
         html_report_error(['Unknown Content-type ',tt([Type,"/",Subtype]),
@@ -924,7 +925,8 @@ get_lines_to_boundary(Boundary, Lines, End) :-
         get_lines_to_boundary_(Line, Boundary, Lines, End).
 
 get_lines_to_boundary_(Line, Boundary, Lines, End) :-
-        append(Boundary, R, Line),
+        remove_last_eolf(Line, Line1),
+        append(Boundary, R, Line1),
         check_end(R, End), !,
         Lines = [].
 get_lines_to_boundary_(Line, Boundary, [Line|Lines], End) :-
@@ -934,12 +936,30 @@ get_lines_to_boundary_(Line, Boundary, [Line|Lines], End) :-
 check_end([], continue).
 check_end("--", end).
 
+% remove eolfs
+preprocess_header_lines([],[]) :- !.
+preprocess_header_lines([L|Ls], [L1|Ls1]) :-
+        remove_last_eolf(L, L1),
+        preprocess_header_lines(Ls, Ls1).
+
+remove_last_line_0a_ending([], []) :- !.
+remove_last_line_0a_ending([X], [Y]) :-
+        append(Y, "\n", X), !.
+remove_last_line_0a_ending([X], [X]) :- !.
+remove_last_line_0a_ending([L|Ls], [L|Ls1]) :-
+        remove_last_line_0a_ending(Ls, Ls1).
+
 extract_name_value([L|Ls], N, V) :-
-        head_and_body_lines(L, Ls, HLs, BLs),
+        head_and_body_lines(L, Ls, HLs1, BLs),
+        preprocess_header_lines(HLs1, HLs),
         extract_name_type(HLs, N, T),
-        extract_value(T, BLs, V).
+        remove_last_line_0a_ending(BLs, BLs1),
+        extract_value(T, BLs1, V).
 
 head_and_body_lines([], BLs, [], BLs) :- !.
+head_and_body_lines("\r\n", BLs, [], BLs) :- !.
+head_and_body_lines("\r", BLs, [], BLs) :- !.
+head_and_body_lines("\n", BLs, [], BLs) :- !.
 head_and_body_lines(HL, [L|Ls], [HL|HLs], BLs) :-
         head_and_body_lines(L, Ls, HLs, BLs).
 
@@ -1898,20 +1918,22 @@ write_string(Stream, S) :-
 write_string([]).
 write_string([C|Cs]) :- put_code(C), write_string(Cs).
 
+% remove_last_eolf(+String, -String)
+remove_last_eolf("\r\n", []) :- !.
+remove_last_eolf("\r", []) :- !.
+remove_last_eolf("\n", []) :- !.
+remove_last_eolf([], []) :- !.
+remove_last_eolf([C|Rest], [C|Rest1]) :-
+        remove_last_eolf(Rest, Rest1).
+
 get_line(Line) :-
         get_code(C),
         get_line_after(C, Cs),
         Line = Cs.
 
+% only process \r\n and \n
 get_line_after(-1,[]) :- !. % EOF
-get_line_after(10,[]) :- !. % Newline
-get_line_after(13, R) :- !, % Return, delete if at end of line
-        get_code(C),
-        get_line_after(C, Cs),
-        ( Cs = [] ->
-              R = []
-        ; R = [13|Cs]
-        ).
+get_line_after(10,[10]) :- !. % Newline
 get_line_after(C, [C|Cs]) :-
         get_code(C1),
         get_line_after(C1, Cs).
