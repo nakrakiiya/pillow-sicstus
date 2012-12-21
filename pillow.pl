@@ -30,18 +30,18 @@
 :- op(150,  fx, $).
 
 :- use_module(library(lists), [
-	reverse/2,
-	select/3
-	]).
+        reverse/2,
+        select/3
+        ]).
 :- use_module(library(sockets), [
-	%% [PM] 4.0 new sockets
-	socket_client_open/3,
-	socket_select/7
+        %% [PM] 4.0 new sockets
+        socket_client_open/3,
+        socket_select/7
 
-	%% socket/2,
-	%% socket_connect/3,
-	%% socket_select/5
-	]).
+        %% socket/2,
+        %% socket_connect/3,
+        %% socket_select/5
+        ]).
 
 :- use_module(library(system), [environ/2]).
 
@@ -67,9 +67,9 @@
 %% [MC]
 %% :- include(icon_address).
 icon_base_address(Base) :-
-	absolute_file_name(library('pillow/images'), Abs),
-	atom_concat(Abs, /, Abs2),
-	atom_concat('file:', Abs2, Base).
+        absolute_file_name(library('pillow/images'), Abs),
+        atom_concat(Abs, /, Abs2),
+        atom_concat('file:', Abs2, Base).
 
 % :- comment(icon_address(Img, IAddress), "The PiLLoW image @var{Img} has
 %            URL @var{IAddress}.").
@@ -942,18 +942,22 @@ preprocess_header_lines([L|Ls], [L1|Ls1]) :-
         remove_last_eolf(L, L1),
         preprocess_header_lines(Ls, Ls1).
 
-remove_last_line_0a_ending([], []) :- !.
-remove_last_line_0a_ending([X], [Y]) :-
+remove_last_line_ending([], []) :- !.
+remove_last_line_ending([X], [Y]) :-
+        append(Y, "\r\n", X), !.
+remove_last_line_ending([X], [Y]) :-
+        append(Y, "\r", X), !.
+remove_last_line_ending([X], [Y]) :-
         append(Y, "\n", X), !.
-remove_last_line_0a_ending([X], [X]) :- !.
-remove_last_line_0a_ending([L|Ls], [L|Ls1]) :-
-        remove_last_line_0a_ending(Ls, Ls1).
+remove_last_line_ending([X], [X]) :- !.
+remove_last_line_ending([L|Ls], [L|Ls1]) :-
+        remove_last_line_ending(Ls, Ls1).
 
 extract_name_value([L|Ls], N, V) :-
         head_and_body_lines(L, Ls, HLs1, BLs),
         preprocess_header_lines(HLs1, HLs),
         extract_name_type(HLs, N, T),
-        remove_last_line_0a_ending(BLs, BLs1),
+        remove_last_line_ending(BLs, BLs1),
         extract_value(T, BLs1, V).
 
 head_and_body_lines([], BLs, [], BLs) :- !.
@@ -1081,7 +1085,7 @@ my_url(URL) :-
 % :- true pred set_cookie(+atm,+constant).
 
 set_cookie(Name,Value) :-
-	display_list(['Set-Cookie: ',Name,'=',Value,'\n']).
+        display_list(['Set-Cookie: ',Name,'=',Value,'\n']).
 
 % :- comment(get_cookies(Cookies), "Unifies @var{Cookies} with a dictionary of
 %    @em{attribute}=@em{value} pairs of the active cookies for this URL.").
@@ -1094,31 +1098,31 @@ set_cookie(Name,Value) :-
 %      var1=val1; var2=val2; ..... varn=valn
 
 get_cookies(Cs) :-
-	getenvstr('HTTP_COOKIE',CookiesStr),
-	cookies(Cs,[0';,0' |CookiesStr],[]), !.
+        getenvstr('HTTP_COOKIE',CookiesStr),
+        cookies(Cs,[0';,0' |CookiesStr],[]), !.
 get_cookies([]).
 
 cookies([]) --> "".
 cookies([C=V|Cs]) -->
-	"; ",
-	cookie_str(StrC),
-	"=",
-	cookie_str(StrV),
-	{
+        "; ",
+        cookie_str(StrC),
+        "=",
+        cookie_str(StrV),
+        {
           atom_codes(C,StrC),
-	  name(V,StrV)
+          name(V,StrV)
         },
-	cookies(Cs).
+        cookies(Cs).
 
 cookie_str([C|Cs]) -->
-	legal_cookie_char(C),
-	cookie_str(Cs), !.
+        legal_cookie_char(C),
+        cookie_str(Cs), !.
 cookie_str([C]) -->
-	legal_cookie_char(C).
+        legal_cookie_char(C).
 
 legal_cookie_char(C) -->
-	[C],
-	{C \== 0';, C\== 0'=}.
+        [C],
+        {C \== 0';, C\== 0'=}.
 
 % ----------------------------------------------------------------------------
 
@@ -1464,9 +1468,9 @@ http_credential_param(P=V) -->
 
 
 http_response(R) -->
-	http_full_response(R), !.
+        http_full_response(R), !.
 http_response(R) -->
-	http_simple_response(R).
+        http_simple_response(R).
 
 http_full_response([Status|Head_Body]) -->
         http_status_line(Status),
@@ -1927,7 +1931,7 @@ remove_last_eolf([C|Rest], [C|Rest1]) :-
         remove_last_eolf(Rest, Rest1).
 
 get_line(Line) :-
-        get_code(C),
+        get_byte(C),
         get_line_after(C, Cs),
         Line = Cs.
 
@@ -1935,7 +1939,7 @@ get_line(Line) :-
 get_line_after(-1,[]) :- !. % EOF
 get_line_after(10,[10]) :- !. % Newline
 get_line_after(C, [C|Cs]) :-
-        get_code(C1),
+        get_byte(C1),
         get_line_after(C1, Cs).
 
 whitespace --> whitespace_char, whitespace0.
@@ -1958,31 +1962,31 @@ getenvstr(Var,ValStr) :-
         atom_codes(Val,ValStr).
 
 list_lookup(List, Functor, Key, Value) :-
-	var(List), !,
+        var(List), !,
         functor(Pair, Functor, 2),
         arg(1, Pair, Key),
         arg(2, Pair, Value),
-	List=[Pair|_].
+        List=[Pair|_].
 list_lookup([Pair|_], Functor, Key, Value) :-
         functor(Pair, Functor, 2),
         arg(1, Pair, Key0),
-	Key0==Key, !,
+        Key0==Key, !,
         arg(2, Pair, Value).
 list_lookup([_|List], Functor, Key, Value) :-
-	list_lookup(List, Functor, Key, Value).
+        list_lookup(List, Functor, Key, Value).
 
 http_transaction(Host, Port, Request, Timeout, Response) :-
 
-	%% [PM] 4.0 new sockets
-	socket_client_open(Host:Port, Stream, [type(text)]),
+        %% [PM] 4.0 new sockets
+        socket_client_open(Host:Port, Stream, [type(text)]),
         %% socket('AF_INET', Socket),
         %% socket_connect(Socket, 'AF_INET'(Host,Port), Stream),
 
         write_string(Stream, Request),
         flush_output(Stream),
 
-	%% [PM] 4.0 new sockets
-	socket_select([],_, [Stream],R, [],_, Timeout),
+        %% [PM] 4.0 new sockets
+        socket_select([],_, [Stream],R, [],_, Timeout),
         %% socket_select([], _, Timeout:0, [Stream], R),
 
         R \== [],  % Fail if timeout
