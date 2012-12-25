@@ -1,0 +1,1 @@
+Build steps:1. sicstus -l upload.pl2. spld -S -o upload.exe upload.sav3. copy upload.exe to <path_to_httpd_server>\cgi-bincopy upload.html to <path_to_httpd_server>\htdocs4. ensure there exists a directory named 'c:\temp'5. run it ! e.g. start httpd server and visit http://127.0.0.1/upload.html
