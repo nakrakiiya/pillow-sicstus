@@ -1,5 +1,4 @@
 :- use_module(library(pillow)).
-:- use_module(library(system)).
 :- use_module(library(pillow_upload_file)).
 :- use_module(library(cio)).
 
