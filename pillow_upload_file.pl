@@ -1,13 +1,17 @@
 % handle file upload by PiLLoW
 %
 % call `cio:set_stdin_mode(binary)' before anything
-:- module(pillow_upload_file, [upload_file/4]).
+:- module(pillow_upload_file, [upload_file/4,
+                               upload_file/2,
+                               get_filename/2]).
 :- use_module([ library(system),
                 library(file_systems),
                 library(lists) 
               ]).
 
-:- mode upload_file(+, +, +, -).
+:- mode upload_file(+, +, +, -),
+        upload_file(+, +),
+        get_filename(+, -).
 
 % gen_new_filename(+BaseDirectory, +Prefix, +Suffix, -NewFileName)
 % BaseDirectory, Prefix, Suffix are lists of codes
@@ -64,9 +68,7 @@ save_data__save_lines_list([L|Rest], Stream) :-
         save_data__save_bytes(L, Stream),
         save_data__save_lines_list(Rest, Stream).
 
-        
 
-% get_form_value/3 获取到的是file(name, [[b1,b2,...],[b3,b4,...],...])的形式。
 % upload_file(+FileValue, +BaseDirectory, +Prefix, -NewFileName) 
 % BaseDirectory, Prefix, NewFileName are atoms          
 upload_file(file(OrigName, Content), BaseDirectory, Prefix, NewFileName) :-
@@ -79,4 +81,16 @@ upload_file(file(OrigName, Content), BaseDirectory, Prefix, NewFileName) :-
           gen_new_filename(BaseDirectory1, Prefix1, "", NewFileName) ),
         save_data(Content, NewFileName).
         
-      
+
+% upload_file(+FileValue, +Path) 
+% Path is an atom
+%
+% save FileValue to file `Path'
+upload_file(file(_, Content), Path) :-
+        save_data(Content, Path).
+
+% get_filename(+FileValue, -FileName).
+% FileName is an atom
+%
+% retrieve the FileName from FileValue
+get_filename(file(FileName,_), FileName).
