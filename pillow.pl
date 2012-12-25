@@ -25,6 +25,7 @@
         form_request_method/1, icon_address/2, html_protect/1,
         http_lines/3,
         fetch_url/3]).
+:- use_module(library(cio)).
 
 :- op(150, xfx, $).
 :- op(150,  fx, $).
@@ -1923,15 +1924,15 @@ write_string([]).
 write_string([C|Cs]) :- put_code(C), write_string(Cs).
 
 % remove_last_eolf(+String, -String)
-remove_last_eolf("\r\n", []) :- !.
-remove_last_eolf("\r", []) :- !.
-remove_last_eolf("\n", []) :- !.
+remove_last_eolf([13,10], []) :- !.
+remove_last_eolf([13], []) :- !.
+remove_last_eolf([10], []) :- !.
 remove_last_eolf([], []) :- !.
 remove_last_eolf([C|Rest], [C|Rest1]) :-
         remove_last_eolf(Rest, Rest1).
 
 get_line(Line) :-
-        get_byte(C),
+        getchar(C),
         get_line_after(C, Cs),
         Line = Cs.
 
@@ -1939,7 +1940,7 @@ get_line(Line) :-
 get_line_after(-1,[]) :- !. % EOF
 get_line_after(10,[10]) :- !. % Newline
 get_line_after(C, [C|Cs]) :-
-        get_byte(C1),
+        getchar(C1),
         get_line_after(C1, Cs).
 
 whitespace --> whitespace_char, whitespace0.
